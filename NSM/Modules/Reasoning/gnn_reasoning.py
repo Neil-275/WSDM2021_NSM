@@ -21,9 +21,18 @@ class GNNReasoning(BaseReasoning):
         entity_dim = self.entity_dim
         self.softmax_d1 = nn.Softmax(dim=1)
         self.score_func = nn.Linear(in_features=entity_dim, out_features=1)
+        nn.init.xavier_uniform_(self.score_func.weight)
+        nn.init.zeros_(self.score_func.bias)
         for i in range(self.num_step):
-            self.add_module('rel_linear' + str(i), nn.Linear(in_features=entity_dim, out_features=entity_dim))
-            self.add_module('e2e_linear' + str(i), nn.Linear(in_features=2 * entity_dim, out_features=entity_dim))
+            rel_linear = nn.Linear(in_features=entity_dim, out_features=entity_dim)
+            e2e_linear = nn.Linear(in_features=2 * entity_dim, out_features=entity_dim)
+            # Initialize weights with Xavier uniform for numerical stability
+            nn.init.xavier_uniform_(rel_linear.weight)
+            nn.init.zeros_(rel_linear.bias)
+            nn.init.xavier_uniform_(e2e_linear.weight)
+            nn.init.zeros_(e2e_linear.bias)
+            self.add_module('rel_linear' + str(i), rel_linear)
+            self.add_module('e2e_linear' + str(i), e2e_linear)
             # self.add_module('score_func' + str(i), nn.Linear(in_features=entity_dim, out_features=1))
 
     def reason_layer(self, curr_dist, instruction, rel_linear):
@@ -35,7 +44,12 @@ class GNNReasoning(BaseReasoning):
         fact_query = torch.index_select(instruction, dim=0, index=self.batch_ids)
         # fact_val = F.relu(self.kb_self_linear(fact_rel) + self.kb_head_linear(self.linear_drop(fact_ent)))
         fact_val = F.relu(rel_linear(fact_rel) * fact_query)
+        # Clamp to prevent numerical instability
+        fact_val = torch.clamp(fact_val, min=-1e6, max=1e6)
+        
         fact_prior = torch.sparse.mm(self.head2fact_mat, curr_dist.view(-1, 1))
+        # Handle potential NaN values from sparse operations
+        fact_prior = torch.nan_to_num(fact_prior, nan=0.0, posinf=1e6, neginf=-1e6)
 
         possible_tail = torch.sparse.mm(self.fact2tail_mat, fact_prior)
         # (batch_size *max_local_entity, num_fact) (num_fact, 1)
@@ -46,7 +60,10 @@ class GNNReasoning(BaseReasoning):
         fact_val = fact_val * fact_prior
         # neighbor_rep = torch.sparse.mm(fact2tail_mat, self.kb_tail_linear(self.linear_drop(fact_val)))
         f2e_emb = torch.sparse.mm(self.fact2tail_mat, fact_val)
-        assert not torch.isnan(f2e_emb).any()
+        
+        # Handle potential NaN values
+        f2e_emb = torch.nan_to_num(f2e_emb, nan=0.0, posinf=1e6, neginf=-1e6)
+        assert not torch.isnan(f2e_emb).any(), f"NaN detected in GNNReasoning f2e_emb"
 
         neighbor_rep = f2e_emb.view(batch_size, max_local_entity, self.entity_dim)
         return neighbor_rep, possible_tail
@@ -72,8 +89,16 @@ class GNNReasoning(BaseReasoning):
         neighbor_rep, possible_tail = self.reason_layer(current_dist, relational_ins, rel_linear)
         next_local_entity_emb = torch.cat((self.local_entity_emb, neighbor_rep), dim=2)
         self.local_entity_emb = F.relu(e2e_linear(self.linear_drop(next_local_entity_emb)))
+        
+        # Clamp embeddings to prevent NaN
+        self.local_entity_emb = torch.clamp(self.local_entity_emb, min=-1e6, max=1e6)
+        self.local_entity_emb = torch.nan_to_num(self.local_entity_emb, nan=0.0, posinf=1e6, neginf=-1e6)
 
         score_tp = score_func(self.linear_drop(self.local_entity_emb)).squeeze(dim=2)
+        # Clamp scores to prevent overflow in softmax
+        score_tp = torch.clamp(score_tp, min=-100, max=100)
+        score_tp = torch.nan_to_num(score_tp, nan=0.0, posinf=100, neginf=-100)
+        
         if self.reason_kb:
             answer_mask = self.local_entity_mask * possible_tail
         else:
@@ -83,8 +108,15 @@ class GNNReasoning(BaseReasoning):
         # Use log-domain masking to preserve gradients through the entire network
         # log(mask) gives large negative values (~-18.4) for mask~0, allowing softmax to suppress them
         score_tp = score_tp + torch.log(answer_mask.clamp(min=1e-8))
+        score_tp = torch.clamp(score_tp, min=-100, max=100)
+        score_tp = torch.nan_to_num(score_tp, nan=0.0, posinf=100, neginf=-100)
         
         current_dist = self.softmax_d1(score_tp)
+        
+        # Clamp current_dist to valid probability range to prevent NaN in KL divergence
+        current_dist = torch.clamp(current_dist, min=1e-10, max=1.0 - 1e-10)
+        current_dist = torch.nan_to_num(current_dist, nan=0.5, posinf=1.0, neginf=0.0)
+        
         if return_score:
             return score_tp, current_dist
         return current_dist

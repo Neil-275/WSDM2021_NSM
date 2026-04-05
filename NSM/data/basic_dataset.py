@@ -30,13 +30,19 @@ class BasicDataLoader(object):
         self.dep = []
         skip_index = set()
         index = 0
-        with open(data_file) as f_in:
+        with open(data_file, encoding='utf-8') as f_in:
             for line in tqdm(f_in):
                 index += 1
                 line = line.strip()
                 if not line:
                     continue
-                line = json.loads(line)
+                try:
+                    line = json.loads(line)
+                except json.JSONDecodeError as e:
+                    print(f"Error parsing line {index}: {e}")
+                    print(f"Line preview (first 200 chars): {line[:200]}")
+                    skip_index.add(index)
+                    continue
                 if len(line['entities']) == 0:
                     skip_index.add(index)
                     continue

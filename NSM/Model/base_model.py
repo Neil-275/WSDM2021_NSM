@@ -246,10 +246,24 @@ class BaseModel(torch.nn.Module):
         # (batch_size, 1)
         for i in range(self.num_step):
             cur_dist = self.dist_history[i + 1]
+            
+            # Safeguard: clamp distribution values to prevent NaN
+            cur_dist = torch.clamp(cur_dist, min=1e-10, max=1.0 - 1e-10)
+            cur_dist = torch.nan_to_num(cur_dist, nan=0.5, posinf=1.0, neginf=0.0)
+            
             cur_label_dist = label_dist[i]
             cur_label_dist = torch.from_numpy(cur_label_dist).type('torch.FloatTensor').to(self.device)
+            
+            # Safeguard: clamp label distribution
+            cur_label_dist = torch.clamp(cur_label_dist, min=1e-10, max=1.0 - 1e-10)
+            cur_label_dist = torch.nan_to_num(cur_label_dist, nan=0.5, posinf=1.0, neginf=0.0)
+            
             # (batch_size, num_entity)
             tp_loss = self.get_loss_new(pred_dist=cur_dist, answer_dist=cur_label_dist, reduction='none')
+            
+            # Handle NaN in loss
+            tp_loss = torch.nan_to_num(tp_loss, nan=1e6, posinf=1e6, neginf=-1e6)
+            
             # print(tp_loss.size())
             # print(label_valid)
             tp_loss = tp_loss * label_valid
@@ -261,6 +275,10 @@ class BaseModel(torch.nn.Module):
                 cur_loss = torch.sum(tp_loss) / cur_dist.size(0)
             else:
                 raise NotImplementedError
+            
+            # Final NaN check on loss
+            cur_loss = torch.nan_to_num(cur_loss, nan=1e6, posinf=1e6, neginf=-1e6)
+            
             if loss_label is None:
                 loss_label = cur_loss
             else:

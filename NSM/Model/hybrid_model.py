@@ -89,6 +89,13 @@ class HybridModel(BaseModel):
         for i in range(self.num_step):
             forward_dist = self.dist_history[i]
             backward_dist = self.backward_history[i]
+            
+            # Safeguard: clamp distribution values
+            forward_dist = torch.clamp(forward_dist, min=1e-10, max=1.0 - 1e-10)
+            forward_dist = torch.nan_to_num(forward_dist, nan=0.5, posinf=1.0, neginf=0.0)
+            backward_dist = torch.clamp(backward_dist, min=1e-10, max=1.0 - 1e-10)
+            backward_dist = torch.nan_to_num(backward_dist, nan=0.5, posinf=1.0, neginf=0.0)
+            
             if i == 0:
                 # back_loss = self.get_loss_new(backward_dist, forward_dist)
                 back_loss = self.calc_loss_label(curr_dist=backward_dist,
@@ -97,11 +104,20 @@ class HybridModel(BaseModel):
                 # backward last step should be similar with seed distribution
             else:
                 tp_loss = self.get_js_div(forward_dist, backward_dist)
+                tp_loss = torch.nan_to_num(tp_loss, nan=1e6, posinf=1e6, neginf=-1e6)
                 tp_loss = torch.sum(tp_loss * case_valid) / forward_dist.size(0)
+                tp_loss = torch.nan_to_num(tp_loss, nan=1e6, posinf=1e6, neginf=-1e6)
                 if constrain_loss is None:
                     constrain_loss = tp_loss
                 else:
                     constrain_loss += tp_loss
+        
+        # Final safeguard
+        if back_loss is not None:
+            back_loss = torch.nan_to_num(back_loss, nan=1e6, posinf=1e6, neginf=-1e6)
+        if constrain_loss is not None:
+            constrain_loss = torch.nan_to_num(constrain_loss, nan=1e6, posinf=1e6, neginf=-1e6)
+        
         return back_loss, constrain_loss
 
     def label_data(self, batch):

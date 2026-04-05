@@ -33,7 +33,7 @@ class LSTMInstruction(BaseInstruction):
                                     batch_first=True, bidirectional=False)
 
     def encode_question(self, query_text):
-        print("encode question: ", query_text)
+        # print("encode question: ", query_text)
         batch_size = query_text.size(0)
         query_word_emb = self.word_embedding(query_text)  # batch_size, max_query_word, word_dim
         query_hidden_emb, (h_n, c_n) = self.node_encoder(self.lstm_drop(query_word_emb),

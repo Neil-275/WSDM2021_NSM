@@ -47,11 +47,11 @@ class BaseReasoning(torch.nn.Module):
         batch_size = self.batch_size
         max_local_entity = self.max_local_entity
         self.num_fact = num_fact
-        fact2head = torch.LongTensor([batch_heads, fact_ids]).to(self.device)
-        fact2tail = torch.LongTensor([batch_tails, fact_ids]).to(self.device)
-        head2fact = torch.LongTensor([fact_ids, batch_heads]).to(self.device)
-        tail2fact = torch.LongTensor([fact_ids, batch_tails]).to(self.device)
-        rel2fact = torch.LongTensor([batch_rels + batch_ids * num_relation, fact_ids]).to(self.device)
+        fact2head = torch.LongTensor(np.array([batch_heads, fact_ids])).to(self.device)
+        fact2tail = torch.LongTensor(np.array([batch_tails, fact_ids])).to(self.device)
+        head2fact = torch.LongTensor(np.array([fact_ids, batch_heads])).to(self.device)
+        tail2fact = torch.LongTensor(np.array([fact_ids, batch_tails])).to(self.device)
+        rel2fact = torch.LongTensor(np.array([batch_rels + batch_ids * num_relation, fact_ids])).to(self.device)
         self.batch_rels = torch.LongTensor(batch_rels).to(self.device)
         self.batch_ids = torch.LongTensor(batch_ids).to(self.device)
         self.batch_heads = torch.LongTensor(batch_heads).to(self.device)
@@ -67,5 +67,6 @@ class BaseReasoning(torch.nn.Module):
         self.rel2fact_mat = self._build_sparse_tensor(rel2fact, val_one, (batch_size * num_relation, num_fact))
 
     def _build_sparse_tensor(self, indices, values, size):
-        return torch.sparse.FloatTensor(indices, values, size).to(self.device)
+        # return torch.sparse.FloatTensor(indices, values, size).to(self.device)
+        return torch.sparse_coo_tensor(indices, values, size, device=self.device)
 

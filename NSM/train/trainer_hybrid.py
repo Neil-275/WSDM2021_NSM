@@ -159,12 +159,32 @@ class Trainer_KBQA(object):
             # loss = self.train_step_student(batch, label_dist, label_valid)
             self.optim_student.zero_grad()
             loss, extras, _, tp_list = self.student(batch, training=True)
+            
+            # Handle NaN in loss
+            if torch.isnan(loss):
+                print(f"WARNING: NaN loss detected at iteration {iteration}. Skipping backward pass.")
+                # Check which components have NaN
+                for i, extra_item in enumerate(extra_item_list):
+                    if torch.isnan(torch.tensor(extras[i])):
+                        print(f"  {extra_item} loss is NaN")
+                # Skip this batch to prevent NaN propagation
+                continue
+            
             for i, extra_item in enumerate(extra_item_list):
                 extra_dict[extra_item].append(extras[i])
             h1_list, f1_list = tp_list
             h1_list_all.extend(h1_list)
             f1_list_all.extend(f1_list)
             loss.backward()
+            
+            # Check for NaN gradients
+            has_nan_grad = False
+            for name, param in self.student.named_parameters():
+                if param.grad is not None and torch.isnan(param.grad).any():
+                    has_nan_grad = True
+                    print(f"WARNING: NaN gradient in {name}")
+                    param.grad[torch.isnan(param.grad)] = 0.0
+            
             torch.nn.utils.clip_grad_norm_([param for name, param in self.student.named_parameters()],
                                            self.args['gradient_clip'])
             self.optim_student.step()
