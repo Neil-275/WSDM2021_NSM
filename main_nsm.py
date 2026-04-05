@@ -40,7 +40,7 @@ parser.add_argument('--lstm_dropout', default=0.3, type=float)
 parser.add_argument('--linear_dropout', default=0.2, type=float)
 
 # optimization
-parser.add_argument('--num_epoch', default=100, type=int)
+parser.add_argument('--num_epoch', default=10, type=int)
 parser.add_argument('--fact_scale', default=3, type=int)
 parser.add_argument('--eval_every', default=5, type=int)
 parser.add_argument('--batch_size', default=8, type=int)
@@ -110,7 +110,7 @@ def main():
     if not args.is_eval:
         trainer.train(0, args.num_epoch - 1)
     else:
-        assert args.load_experiment is not None
+        # assert args.load_experiment is not None
         if args.load_experiment is not None:
             ckpt_path = os.path.join(args.checkpoint_dir, args.load_experiment)
             print("Loading pre trained model from {}".format(ckpt_path))

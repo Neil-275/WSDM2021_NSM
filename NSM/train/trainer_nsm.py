@@ -55,7 +55,7 @@ class Trainer_KBQA(object):
     def load_data(self, args):
         dataset = load_data(args)
         self.train_data = dataset["train"]
-        self.valid_data = dataset["valid"]
+        self.valid_data = dataset["valid"] ## Test here
         self.test_data = dataset["test"]
         self.entity2id = dataset["entity2id"]
         self.relation2id = dataset["relation2id"]
@@ -78,7 +78,7 @@ class Trainer_KBQA(object):
         eval_every = self.args['eval_every']
         # eval_acc = inference(self.model, self.valid_data, self.entity2id, self.args)
         self.evaluate(self.valid_data, self.test_batch_size, mode="teacher")
-        print("Strat Training------------------")
+        print("Start Training------------------")
         for epoch in range(start_epoch, end_epoch + 1):
             st = time.time()
             loss, extras, h1_list_all, f1_list_all = self.train_epoch()
@@ -154,16 +154,61 @@ class Trainer_KBQA(object):
             batch = self.train_data.get_batch(iteration, self.args['batch_size'], self.args['fact_drop'])
             # label_dist, label_valid = self.train_data.get_label()
             # loss = self.train_step_student(batch, label_dist, label_valid)
+            print("\n in training loop")
+            
+            # Save param snapshots before update
+            param_before = {}
+            for name, param in self.student.named_parameters():
+                if param.requires_grad:
+                    param_before[name] = param.data.clone().detach()
+            
             self.optim_student.zero_grad()
             loss, _, _, tp_list = self.student(batch, training=True)
+            # print("Loss: ", loss.item())
+            # print(f"Loss requires_grad: {loss.requires_grad}, Loss tracked: {loss.is_leaf}")
+            # print(f"Loss grad_fn: {loss.grad_fn}")
+            
             # if tp_list is not None:
             h1_list, f1_list = tp_list
             h1_list_all.extend(h1_list)
             f1_list_all.extend(f1_list)
+            
+            # Check gradients before backward
             loss.backward()
+            
+            # Print gradient statistics
+            total_grad_norm = 0
+            grad_norms = {}
+            params_with_grads = []
+            for name, param in self.student.named_parameters():
+                if param.grad is not None:
+                    grad_norm = param.grad.data.norm(2).item()
+                    grad_norms[name] = grad_norm
+                    total_grad_norm += grad_norm ** 2
+                    if grad_norm > 0:
+                        params_with_grads.append((name, grad_norm))
+            total_grad_norm = total_grad_norm ** 0.5
+            # print(f"Total gradient norm before clip: {total_grad_norm:.6f}")
+            # print(f"Num params with non-zero gradients: {len(params_with_grads)}")
+            if total_grad_norm < 1e-7:
+                print("WARNING: Gradient norm is extremely small!")
+            
             torch.nn.utils.clip_grad_norm_([param for name, param in self.student.named_parameters()],
                                            self.args['gradient_clip'])
             self.optim_student.step()
+            
+            # Check parameter changes after update
+            param_changes = []
+            for name, param in self.student.named_parameters():
+                if param.requires_grad and name in param_before:
+                    change = (param.data - param_before[name]).abs().sum().item()
+                    if change > 1e-9:
+                        param_changes.append((name, change))
+            
+            print(f"Params changed: {len(param_changes)} out of {len(param_before)}")
+            if len(param_changes) == 0:
+                print("WARNING: No parameter updates detected!")
+            
             losses.append(loss.item())
         extras = [0, 0]
         return np.mean(losses), extras, h1_list_all, f1_list_all

@@ -25,6 +25,11 @@ def load_data(config):
         train_data = SingleDataLoader(config, word2id, relation2id, entity2id, data_type="train")
         valid_data = SingleDataLoader(config, word2id, relation2id, entity2id, data_type="dev")
     test_data = SingleDataLoader(config, word2id, relation2id, entity2id, data_type="test")
+    print("Finish loading data, train size: {}, valid size: {}, test size: {}".format(
+        0 if train_data is None else train_data.num_data, 0 if valid_data is None else valid_data.num_data,
+        test_data.num_data))
+    # print("\n")
+    # print("Valid data:", valid_data)
     dataset = {
         "train": train_data,
         "valid": valid_data,

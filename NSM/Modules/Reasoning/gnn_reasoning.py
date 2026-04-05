@@ -39,7 +39,9 @@ class GNNReasoning(BaseReasoning):
 
         possible_tail = torch.sparse.mm(self.fact2tail_mat, fact_prior)
         # (batch_size *max_local_entity, num_fact) (num_fact, 1)
-        possible_tail = (possible_tail > VERY_SMALL_NUMBER).float().view(batch_size, max_local_entity)
+        # FIXED: Use continuous values instead of hard binary mask to preserve gradients
+        possible_tail = torch.clamp(possible_tail, min=0) / (torch.clamp(possible_tail, min=0) + 1e-8)
+        possible_tail = possible_tail.view(batch_size, max_local_entity)
 
         fact_val = fact_val * fact_prior
         # neighbor_rep = torch.sparse.mm(fact2tail_mat, self.kb_tail_linear(self.linear_drop(fact_val)))
@@ -77,7 +79,11 @@ class GNNReasoning(BaseReasoning):
         else:
             answer_mask = self.local_entity_mask
         self.possible_cand.append(answer_mask)
-        score_tp = score_tp + (1 - answer_mask) * VERY_NEG_NUMBER
+        
+        # Use log-domain masking to preserve gradients through the entire network
+        # log(mask) gives large negative values (~-18.4) for mask~0, allowing softmax to suppress them
+        score_tp = score_tp + torch.log(answer_mask.clamp(min=1e-8))
+        
         current_dist = self.softmax_d1(score_tp)
         if return_score:
             return score_tp, current_dist

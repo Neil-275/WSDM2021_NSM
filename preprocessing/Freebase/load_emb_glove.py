@@ -30,7 +30,7 @@ def load_emb(vocab_file, glove_file):
     voc2id = load_vocab(vocab_file)
     words = set(voc2id.keys())
     word2emb = {}
-    f = open(glove_file)
+    f = open(glove_file, encoding='utf-8')
     for line in f:
         line = line.strip().split()
         word = line[0]
@@ -41,10 +41,10 @@ def load_emb(vocab_file, glove_file):
         except ValueError:
             emb = np.array([float(val) for val in line[-300:]])
         word2emb[word] = emb
-    print(len(word2emb))
+    # print(len(word2emb))
     return word2emb
 
-glove_file = "/mnt/DGX-1-Vol01/gaolehe/data/glove.840B.300d.txt"
+glove_file = "glove.840B.300d/glove.840B.300d.txt"
 dim = 300
 data_folder = sys.argv[1]
 vocab_file = os.path.join(data_folder, "vocab_new.txt")

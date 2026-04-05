@@ -59,8 +59,14 @@ class GNNModel(BaseModel):
 
     def calc_loss_label(self, curr_dist, teacher_dist, label_valid):
         tp_loss = self.get_loss_new(pred_dist=curr_dist, answer_dist=teacher_dist, reduction='none')
+        # print(f"DEBUG calc_loss_label - curr_dist shape: {curr_dist.shape}, min: {curr_dist.min():.6f}, max: {curr_dist.max():.6f}")
+        # print(f"DEBUG calc_loss_label - teacher_dist shape: {teacher_dist.shape}, min: {teacher_dist.min():.6f}, max: {teacher_dist.max():.6f}")
+        # print(f"DEBUG calc_loss_label - tp_loss shape: {tp_loss.shape}, min: {tp_loss.min():.6f}, max: {tp_loss.max():.6f}")
         tp_loss = tp_loss * label_valid
+        # print(f"DEBUG calc_loss_label - label_valid shape: {label_valid.shape}")
+        # print(f"DEBUG calc_loss_label - tp_loss after multiply shape: {tp_loss.shape}, min: {tp_loss.min():.6f}, max: {tp_loss.max():.6f}")
         cur_loss = torch.sum(tp_loss) / curr_dist.size(0)
+        # print(f"DEBUG calc_loss_label - final cur_loss: {cur_loss.item():.6f}, requires_grad: {cur_loss.requires_grad}")
         return cur_loss
 
     def train_batch(self, batch, middle_dist, label_valid=None):

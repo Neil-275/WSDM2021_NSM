@@ -24,7 +24,7 @@ class BasicDataLoader(object):
 
     def _load_file(self, config, data_type="train"):
         data_file = config['data_folder'] + data_type + "_simple.json"
-        dep_file = config['data_folder'] + data_type + ".dep"
+        # dep_file = config['data_folder'] + data_type + ".dep"
         print('loading data from', data_file)
         self.data = []
         self.dep = []
@@ -33,6 +33,9 @@ class BasicDataLoader(object):
         with open(data_file) as f_in:
             for line in tqdm(f_in):
                 index += 1
+                line = line.strip()
+                if not line:
+                    continue
                 line = json.loads(line)
                 if len(line['entities']) == 0:
                     skip_index.add(index)
@@ -41,13 +44,14 @@ class BasicDataLoader(object):
                 self.max_facts = max(self.max_facts, 2 * len(line['subgraph']['tuples']))
         print("skip", skip_index)
         index = 0
-        with open(dep_file) as f_in:
-            for line in f_in:
-                index += 1
-                if index in skip_index:
-                    continue
-                line = json.loads(line)
-                self.dep.append(line)
+        # with open(dep_file) as f_in:
+        #     for line in f_in:
+        #         index += 1
+        #         if index in skip_index:
+        #             continue
+        #         line = json.loads(line)
+        #         self.dep.append(line)
+        # print("data:", self.data[0]["question"])
         print('max_facts: ', self.max_facts)
         self.num_data = len(self.data)
         self.batches = np.arange(self.num_data)
@@ -76,7 +80,7 @@ class BasicDataLoader(object):
             self._prepare_con()
         else:
             print('preparing dep ...')
-            self._prepare_dep()
+            self._prepare_dep_alter()
         print('preparing data ...')
         self._prepare_data()
 
@@ -143,10 +147,30 @@ class BasicDataLoader(object):
                 tp_str += id2word[np_array_x[i]] + " "
         return tp_str
 
+    def _prepare_dep_alter(self):
+        max_count = 0
+        for line in self.data:
+            word_list = self.tokenize_sent(line['question'])
+            max_count = max(max_count, len(word_list))
+        self.max_query_word = max_count
+        self.query_texts = np.full((self.num_data, self.max_query_word), len(self.word2id), dtype=int)
+        next_id = 0
+        for sample in tqdm(self.data):
+            word_list = self.tokenize_sent(sample['question'])
+            for j, word in enumerate(word_list):
+                if word in self.word2id:
+                    self.query_texts[next_id, j] = self.word2id[word]
+                else:
+                    self.query_texts[next_id, j] = len(self.word2id)
+            next_id += 1
+
     def _prepare_dep(self):
         max_count = 0
-        for line in self.dep:
-            word_list = line["dep"]
+        # for line in self.dep:
+        #     word_list = line["dep"]
+        #     max_count = max(max_count, len(word_list))
+        for sample in self.data:
+            word_list = self.tokenize_sent(sample['question'])
             max_count = max(max_count, len(word_list))
         self.max_query_word = max_count
         self.query_texts = np.full((self.num_data, self.max_query_word), len(self.word2id), dtype=int)
@@ -247,7 +271,7 @@ class BasicDataLoader(object):
 
             # tokenize question
             # tokens = self.tokenize_sent(sample['question'])
-            # tokens = sample['question'].split()
+            # # tokens = sample['question'].split()
             # for j, word in enumerate(tokens):
             #     # if j < self.max_query_word:
             #     if word in self.word2id:

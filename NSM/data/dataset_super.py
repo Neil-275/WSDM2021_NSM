@@ -99,7 +99,7 @@ class SingleDataLoader(BasicDataLoader):
         # hop_dict[self.num_step] = target_tail
         exist_flag = False
         for step in order_list:
-            # if step == self.num_step - 1:
+            # if step == self.num_step - 1:c
             cur_action = int(tp_obj[tp_key][str(step)]["action"])
             action_list.append(cur_action)
             if step > 0:

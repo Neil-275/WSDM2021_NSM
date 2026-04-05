@@ -130,6 +130,9 @@ class Evaluator_nsm:
         for iteration in tqdm(range(num_epoch)):
             batch = valid_data.get_batch(iteration, test_batch_size, fact_dropout=0.0, test=True)
             with torch.no_grad():
+                # print(len(batch))
+                # print("query_text:", batch[3])
+
                 loss, extras, pred_dist, tp_list = self.student(batch[:-1])
                 pred = torch.max(pred_dist, dim=1)[1]
             local_entity, query_entities, kb_adj_mat, query_text, \
