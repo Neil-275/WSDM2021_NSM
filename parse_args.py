@@ -1,21 +1,14 @@
+
 import argparse
-import sys
-from NSM.train.trainer_student import Trainer_KBQA
-from NSM.util.utils import create_logger
-import time
-import torch
-import numpy as np
-import os
-import datetime
-import copy
-import infer_nsm
+
+
 
 parser = argparse.ArgumentParser()
 
 # datasets
 parser.add_argument('--name', default='webqsp', type=str)
-parser.add_argument('--model_name', default='rw', type=str)
-parser.add_argument('--data_folder', default='/gaolehe/data/KBQA/Freebase/CWQ/', type=str)
+parser.add_argument('--model_name', default='gnn', type=str)
+parser.add_argument('--data_folder', default='../data/cwq/', type=str)
 
 # embeddings
 parser.add_argument('--word2id', default='vocab_new.txt', type=str)
@@ -94,39 +87,3 @@ parser.add_argument('--loss_type', default='kl', type=str)
 parser.add_argument('--label_file', default=None, type=str)
 parser.add_argument('--load_teacher', default=None, type=str)
 parser.add_argument('--inference', action='store_true')
-
-args = parser.parse_args()
-args.use_cuda = torch.cuda.is_available()
-
-np.random.seed(args.seed)
-torch.manual_seed(args.seed)
-if args.experiment_name == None:
-    timestamp = str(int(time.time()))
-    args.experiment_name = "{}-{}-{}".format(
-        args.dataset,
-        args.model_name,
-        timestamp,
-    )
-
-
-def main():
-    if not os.path.exists(args.checkpoint_dir):
-        os.mkdir(args.checkpoint_dir)
-    logger = create_logger(args)
-    # print("cuda: {}".format(args.use_cuda))
-    # print("cuda torch:", torch.cuda.is_available())
-    trainer = Trainer_KBQA(args=vars(args), logger=logger)
-    if not args.is_eval:
-        trainer.train(0, args.num_epoch - 1)
-    else:
-        assert args.load_experiment is not None
-        if args.load_experiment is not None:
-            ckpt_path = os.path.join(args.checkpoint_dir, args.load_experiment)
-            print("Loading pre trained model from {}".format(ckpt_path))
-        else:
-            ckpt_path = None
-        trainer.evaluate_single(ckpt_path)
-
-
-if __name__ == '__main__':
-    main()

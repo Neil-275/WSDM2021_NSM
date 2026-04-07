@@ -2,7 +2,7 @@ import torch
 import numpy as np
 
 
-def infer_top_k(student, batch, id2entity, eps=0.05, top_k=10):
+def infer_top_k(student, batch, entity2id, eps=0.05, top_k=10):
     """
     Inference function for NSM: returns top-k candidate entities with highest scores.
     
@@ -11,7 +11,7 @@ def infer_top_k(student, batch, id2entity, eps=0.05, top_k=10):
         batch: Batch data from dataloader, format: 
                (local_entity, query_entities, kb_adj_mat, query_text, 
                 seed_dist, true_batch_id) - note: without answer_list
-        id2entity: Dictionary mapping entity index to entity name
+        entity2id: Dictionary mapping entity names to entity indices
         eps: Probability threshold (used to filter low-probability candidates)
         top_k: Number of top candidates to return
     
@@ -28,7 +28,7 @@ def infer_top_k(student, batch, id2entity, eps=0.05, top_k=10):
     """
     student.eval()
     results = []
-    
+    id2entity = {idx: entity for entity, idx in entity2id.items()}
     with torch.no_grad():
         # Forward pass through model
         loss, extras, pred_dist, tp_list = student(batch)

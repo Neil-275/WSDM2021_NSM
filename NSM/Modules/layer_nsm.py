@@ -37,7 +37,7 @@ class TypeLayer(nn.Module):
         num_fact = len(fact_ids)
         batch_size, max_local_entity = local_entity.size()
         hidden_size = self.in_features
-        print("Input types - batch_heads:", type(batch_heads), "fact_ids:", type(fact_ids))
+        # print("Input types - batch_heads:", type(batch_heads), "fact_ids:", type(fact_ids))
         fact2head = torch.LongTensor(np.array([batch_heads, fact_ids])).to(self.device)
         fact2tail = torch.LongTensor(np.array([batch_tails, fact_ids])).to(self.device)
         batch_rels = torch.LongTensor(batch_rels).to(self.device)
@@ -105,6 +105,7 @@ class STLayer(nn.Module):
         curr_dist: (batch_size, max_local_entity)
         instruction: (batch_size, hidden_size)
         '''
+        print("123")
         batch_heads, batch_rels, batch_tails, batch_ids, fact_ids, weight_list = edge_list
         num_fact = len(fact_ids)
         batch_size, max_local_entity, hidden_size = input_vector.size()

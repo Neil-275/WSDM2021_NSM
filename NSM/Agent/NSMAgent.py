@@ -16,6 +16,7 @@ class NsmAgent(BaseAgent):
         super(NsmAgent, self).__init__(args, logger, num_entity, num_relation, num_word)
         self.q_type = "seq"
         model_name = args['model_name'].lower()
+        print("Model name: {}".format(model_name))
         self.label_f1 = args['label_f1']
         self.model_name = model_name
         if model_name.startswith('gnn'):
@@ -26,6 +27,7 @@ class NsmAgent(BaseAgent):
             raise NotImplementedError
 
     def forward(self, batch, training=False):
+        # print("AAAAA")
         batch = self.deal_input(batch)
         return self.model(batch, training=training)
 
