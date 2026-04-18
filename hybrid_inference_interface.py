@@ -29,7 +29,6 @@ class HybridNSMInference:
         relation2id: Dictionary mapping relation names to their indices
         word2id: Dictionary mapping words to their indices
         id2word: Dictionary mapping word indices to their words
-        subgraph_store: Dictionary storing pre-computed subgraphs indexed by ID
         device: Device for model inference (cuda or cpu)
     """
     
@@ -119,43 +118,19 @@ class HybridNSMInference:
                 )
         
         # Load state dict
-        core_model = model.model
-        if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
-            core_model.load_state_dict(checkpoint['model_state_dict'])
-        elif isinstance(checkpoint, dict) and 'state_dict' in checkpoint:
-            core_model.model.load_state_dict(checkpoint['state_dict'])
-        else:
-            core_model.load_state_dict(checkpoint)
+        ### REMEMBER TO REMOVE THIS COMMENT LATER
+        # core_model = model.model
+        # if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+        #     core_model.load_state_dict(checkpoint['model_state_dict'])
+        # elif isinstance(checkpoint, dict) and 'state_dict' in checkpoint:
+        #     core_model.model.load_state_dict(checkpoint['state_dict'])
+        # else:
+        #     core_model.load_state_dict(checkpoint)
         
-        print(f"Loaded model from {checkpoint_path}")
+        # print(f"Loaded model from {checkpoint_path}")
         return model
     
-    def register_subgraph(
-        self,
-        subgraph_id: str,
-        subgraph_edges: List[List[int]],
-        local_entities: List[int],
-        query_entity_ids: Optional[List[int]] = None,
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> None:
-        """
-        Register a pre-computed subgraph for later use in inference.
-        
-        Args:
-            subgraph_id: Unique identifier for this subgraph
-            subgraph_edges: List of [head, relation, tail] triples (as entity/relation indices)
-            local_entities: List of entity IDs to consider in this subgraph
-            query_entity_ids: Query entity IDs (seed entities)
-            metadata: Optional metadata dictionary associated with this subgraph
-        """
-        self.subgraph_store[subgraph_id] = {
-            'edges': subgraph_edges,
-            'local_entities': local_entities,
-            'query_entities': query_entity_ids or [],
-            'metadata': metadata or {}
-        }
-        print(f"Registered subgraph {subgraph_id} with {len(local_entities)} entities")
-    
+   
     def load_subgraph_batch(
         self,
         batch_file: str
@@ -202,6 +177,10 @@ class HybridNSMInference:
             words += [w]
         return words
     
+    def get_subgraph_by_id(self, subgraph_id: str) -> Dict[str, Any]:
+
+        return self.loader.get_subgraph_by_id(subgraph_id)
+
     def _build_adjacency_matrix(
         self,
         edges: List[List[int]],
@@ -267,9 +246,6 @@ class HybridNSMInference:
             RuntimeError: If model is still in training mode
         """
         
-        # Check if subgraph is registered
-        # if subgraph_id not in self.subgraph_store:
-        #     raise KeyError(f"Subgraph {subgraph_id} not registered. Available: {list(self.subgraph_store.keys())}")
         
         if self.model.training:
             self.model.eval()

@@ -11,3 +11,4 @@ checkpoint/
 *.egg-info/
 build/
 dist/
+data_test/

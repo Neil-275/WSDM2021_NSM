@@ -93,7 +93,7 @@ class Trainer_KBQA(object):
             self.logger.info(extra_str)
             # print("actor : {:.4f}, ent : {:.4f}".format(actor_loss, ent_loss))
             if (epoch + 1) % eval_every == 0 and epoch + 1 > 0:
-                # eval_f1, eval_h1 = self.evaluate(self.valid_data, self.test_batch_size, mode="teacher")
+                eval_f1, eval_h1 = self.evaluate(self.valid_data, self.test_batch_size, mode="teacher")
                 eval_f1 = np.mean(f1_list_all)
                 eval_h1 = np.mean(h1_list_all)
                 self.logger.info("EVAL F1: {:.4f}, H1: {:.4f}".format(eval_f1, eval_h1))

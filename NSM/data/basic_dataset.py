@@ -46,7 +46,15 @@ class BasicDataLoader(object):
                 if len(line['entities']) == 0:
                     skip_index.add(index)
                     continue
-                self.data.append(line)
+                # self.data.append(line)
+                # print("Question:", line['question'])
+                if len(line['question']) > 1: 
+                    for i in range(len(line['question'])):
+                        new_line = line.copy()
+                        new_line['question'] = line['question'][i]
+                        new_line['entities'] = [line['entities'][i]]
+                        new_line['answers'] = [line['answers'][i]]
+                        self.data.append(new_line)
                 self.max_facts = max(self.max_facts, 2 * len(line['subgraph']['tuples']))
         print("skip", skip_index)
         index = 0

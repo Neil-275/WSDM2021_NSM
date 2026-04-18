@@ -27,13 +27,13 @@ def load_model_and_vocab(args):
     word2id = load_dict(os.path.join(data_folder, args.word2id))
     relation2id = load_dict(os.path.join(data_folder, args.relation2id))
     entity2id = load_dict(os.path.join(data_folder, args.entity2id))
-    
+    name2entIndex = load_dict(os.path.join(data_folder, args.name2entIndex))
     print(f"Loaded vocabularies:")
     print(f"  Words: {len(word2id)}")
     print(f"  Relations: {len(relation2id)}")
     print(f"  Entities: {len(entity2id)}")
     
-    return word2id, relation2id, entity2id
+    return word2id, relation2id, entity2id, name2entIndex
 
 
 def format_results(results, id2entity, num_to_show=5):
@@ -68,7 +68,7 @@ def demo_inference():
     # Step 1: Load vocabularies
     # ========================================================================
     print("\n[Step 1] Loading vocabularies...")
-    word2id, relation2id, entity2id = load_model_and_vocab(args)
+    word2id, relation2id, entity2id, name2entIndex = load_model_and_vocab(args)
     # id2entity = {idx: ent for ent, idx in entity2id.items()}
     
     # ========================================================================
@@ -76,8 +76,8 @@ def demo_inference():
     # ========================================================================
     print("\n[Step 2] Initializing InferenceDataLoader...")
 
-    
-    inference_loader = InferenceDataLoader(args, word2id, relation2id, entity2id)
+    # tác dụng chính là lấy subgraph tương ứng với id
+    inference_loader = InferenceDataLoader(args, word2id, relation2id, entity2id, name2entIndex)
     print(f"Available subgraphs: {len(inference_loader.list_available_subgraphs())}")
     
     # ========================================================================
@@ -108,7 +108,7 @@ def demo_inference():
     if inference_loader.list_available_subgraphs():
         subgraph_id = inference_loader.list_available_subgraphs()[0]
         print(f"\nUsing subgraph: {subgraph_id}")
-        
+        # (head, relation) -> tail 
         res = hybrid_inferencer.infer(
             subgraph_id=subgraph_id,
             query="Who is the president of France?",

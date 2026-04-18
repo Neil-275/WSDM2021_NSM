@@ -37,8 +37,8 @@ class GNNModel(BaseModel):
 
     def init_reason(self, curr_dist, local_entity, kb_adj_mat, q_input):
         # batch_size = local_entity.size(0)
-        print(f"q_input shape: {q_input.shape}")
-        print(f"local_entity shape: {local_entity.shape}")
+        # print(f"q_input shape: {q_input.shape}")
+        # print(f"local_entity shape: {local_entity.shape}")
         self.local_entity = local_entity
         self.instruction_list, self.attn_list = self.instruction(q_input)
         self.rel_features = self.get_rel_feature()
@@ -116,7 +116,7 @@ class GNNModel(BaseModel):
         return loss, extras, pred_dist, tp_list
 
     def forward(self, batch, training=False):
-        print("AAAA")
+        # print("AAAA")
         current_dist, q_input, query_mask, kb_adj_mat, answer_dist, \
         local_entity, query_entities, true_batch_id = batch
         self.init_reason(curr_dist=current_dist, local_entity=local_entity,

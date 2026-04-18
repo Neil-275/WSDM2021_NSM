@@ -19,7 +19,7 @@ class InferenceDataLoader(object):
     to be compatible with the model's forward pass.
     """
     
-    def __init__(self, config, word2id, relation2id, entity2id):
+    def __init__(self, config, word2id, relation2id, entity2id, name2entIndex):
         """
         Initialize the inference data loader.
         
@@ -32,15 +32,16 @@ class InferenceDataLoader(object):
             word2id (dict): Mapping from words to IDs
             relation2id (dict): Mapping from relation names to IDs
             entity2id (dict): Mapping from entity names/IDs to global entity IDs
+            name2entIndex (dict): Mapping from entity names to entity indices
         """
-        self._parse_args(config, word2id, relation2id, entity2id)
+        self._parse_args(config, word2id, relation2id, entity2id, name2entIndex)
         self._load_subgraphs(config)
     
-    def _parse_args(self, config, word2id, relation2id, entity2id):
+    def _parse_args(self, config, word2id, relation2id, entity2id, name2entIndex):
         """Parse configuration and build mappings."""
-        self.use_inverse_relation = config.use_inverse_relation
-        self.use_self_loop = config.use_self_loop
-        self.num_step = config.num_step
+        self.use_inverse_relation = config.use_inverse_relation if hasattr(config, 'use_inverse_relation') else False
+        self.use_self_loop = config.use_self_loop if hasattr(config, 'use_self_loop') else False
+        self.num_step = config.num_step if hasattr(config, 'num_step') else 1
         self.max_local_entity = 0
         self.max_query_word = 0
         self.max_facts = 0
@@ -50,6 +51,7 @@ class InferenceDataLoader(object):
         self.relation2id = relation2id
         self.entity2id = entity2id
         self.id2entity = {i: entity for entity, i in entity2id.items()}
+        self.entIndex2name = {i: entity for i, entity in enumerate(name2entIndex)}
         
         if self.use_inverse_relation:
             self.num_kb_relation = 2 * len(relation2id)
@@ -106,6 +108,23 @@ class InferenceDataLoader(object):
         
         print(f"Loaded {len(self.subgraphs)} subgraphs")
     
+    def get_subgraph_by_id(self, subgraph_id):
+        """
+        Retrieve a subgraph by its ID.
+        
+        Args:
+            subgraph_id (str): ID of the subgraph to retrieve
+            
+        Returns:
+            dict: Subgraph dict containing 'entities' and 'tuples'
+            
+        Raises:
+            KeyError: If subgraph_id is not found
+        """
+        if subgraph_id not in self.subgraphs:
+            raise KeyError(f"Subgraph ID '{subgraph_id}' not found. Available IDs: {self.subgraph_ids}")
+        return self.subgraphs[subgraph_id]
+
     @staticmethod
     def tokenize_sent(question_text):
         """
@@ -254,7 +273,7 @@ class InferenceDataLoader(object):
         num_local_entity = len(g2l)
         
         if seed_entity_id not in g2l:
-            raise ValueError(f"Seed entity {seed_entity_id} not in subgraph {subgraph_id}")
+            raise ValueError(f"Seed entity {seed_entity_id} not in subgraph {subgraph_id}.\nPhải truyền vào một seed entity có trong subgraph.")
         
         local_seed_entity = g2l[seed_entity_id]
         

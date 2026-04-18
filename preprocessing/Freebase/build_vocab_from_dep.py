@@ -46,9 +46,9 @@ def output_dict(ele2id, filename):
 
 
 def deal_rel(tp_str, dataset):
-    if dataset == "CWQ" or dataset == "webqsp":
+    if dataset.lower() == "cwq" or dataset.lower() == "webqsp":
         return tp_str.split(".")
-    elif dataset == "metaqa":
+    elif dataset.lower() == "metaqa":
         return [tp_str]
     else:
         raise NotImplementedError
@@ -88,6 +88,9 @@ def add_word_in_question(inpath):
     vocab = {}
     for split in ["train_subgraph", "dev_subgraph", "test_subgraph"]:
         infile = os.path.join(inpath, split + ".json")
+        if not os.path.exists(infile):
+            print(f"Warning: File {infile} not found, skipping.")
+            continue
         with open(infile) as f:
             data = json.load(f)
         for obj in data:
@@ -110,7 +113,7 @@ inpath = sys.argv[1]
 outpath = sys.argv[2]
 dataset = sys.argv[3]
 question_vocab = add_word_in_question(inpath)
-relation_file = os.path.join(inpath, "relations.json")
+relation_file = os.path.join(inpath, "relations.txt")
 full_vocab = add_word_in_Relation(relation_file, question_vocab, dataset)
 out_file = os.path.join(outpath, "vocab_new.txt")
 output_dict(full_vocab, out_file)

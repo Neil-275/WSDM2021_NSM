@@ -44,9 +44,10 @@ def load_emb(vocab_file, glove_file):
     # print(len(word2emb))
     return word2emb
 
-glove_file = "glove.840B.300d/glove.840B.300d.txt"
+
 dim = 300
 data_folder = sys.argv[1]
+glove_file = sys.argv[2]
 vocab_file = os.path.join(data_folder, "vocab_new.txt")
 output_file = os.path.join(data_folder, "word_emb_300d.npy")
 word2emb = load_emb(vocab_file, glove_file)
