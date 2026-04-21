@@ -119,15 +119,15 @@ class HybridNSMInference:
         
         # Load state dict
         ### REMEMBER TO REMOVE THIS COMMENT LATER
-        # core_model = model.model
-        # if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
-        #     core_model.load_state_dict(checkpoint['model_state_dict'])
-        # elif isinstance(checkpoint, dict) and 'state_dict' in checkpoint:
-        #     core_model.model.load_state_dict(checkpoint['state_dict'])
-        # else:
-        #     core_model.load_state_dict(checkpoint)
+        core_model = model.model
+        if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+            core_model.load_state_dict(checkpoint['model_state_dict'])
+        elif isinstance(checkpoint, dict) and 'state_dict' in checkpoint:
+            core_model.model.load_state_dict(checkpoint['state_dict'])
+        else:
+            core_model.load_state_dict(checkpoint)
         
-        # print(f"Loaded model from {checkpoint_path}")
+        print(f"Loaded model from {checkpoint_path}")
         return model
     
    

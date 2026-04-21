@@ -4,7 +4,7 @@ import sys
 from tqdm import tqdm
 
 def load_vocab(filename):
-    f = open(filename)
+    f = open(filename, encoding='utf-8')
     voc2id = {}
     for line in f:
         line = line.strip()
@@ -12,7 +12,7 @@ def load_vocab(filename):
     return voc2id
 
 def output_vec(vocab_file, word2emb, output_file, dim=300):
-    f = open(vocab_file)
+    f = open(vocab_file, encoding='utf-8')
     lines = f.readlines()
     # vectors = np.array([], dtype=float)
     vectors = np.zeros((len(lines), dim), dtype=float)

@@ -18,7 +18,7 @@ def tokenize_sent(question_text):
         return words
 
 def load_vocab(filename):
-    f = open(filename)
+    f = open(filename, encoding='utf-8')
     voc2id = {}
     for line in f:
         line = line.strip()
@@ -39,7 +39,7 @@ def load_vocab_json(filename):
 def output_dict(ele2id, filename):
     num_ele = len(ele2id)
     id2ele = {v: k for k, v in ele2id.items()}
-    f = open(filename, "w")
+    f = open(filename, "w", encoding='utf-8')
     for i in range(num_ele):
         f.write(id2ele[i] + "\n")
     f.close()
@@ -91,7 +91,7 @@ def add_word_in_question(inpath):
         if not os.path.exists(infile):
             print(f"Warning: File {infile} not found, skipping.")
             continue
-        with open(infile) as f:
+        with open(infile, encoding='utf-8') as f:
             data = json.load(f)
         for obj in data:
             tp_obj = obj

@@ -51,7 +51,8 @@ class BasicDataLoader(object):
                 if len(line['question']) > 1: 
                     for i in range(len(line['question'])):
                         new_line = line.copy()
-                        new_line['question'] = line['question'][i]
+                        new_line['question'] = line['question'][i].split("-")[1]
+                        # print("Question:", new_line['question'])
                         new_line['entities'] = [line['entities'][i]]
                         new_line['answers'] = [line['answers'][i]]
                         self.data.append(new_line)
